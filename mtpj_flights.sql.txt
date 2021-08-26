@@ -1,0 +1,98 @@
+## W05D05 - Mid-term project SQL Prouction
+
+## connect to remote DB get all tables and save to local machine
+
+create a new local DB mtpj.db
+
+# Import 3 csv files and create 3 new tables
+import flights.csv and create a new table flights
+import fuel_consumption.csv and create a new table fuel_con
+import passengers.csv and create a new table passengers
+
+#Create index can_ind on flights (cancelled)
+create index can_ind on flights(cancelled);
+
+# Create new column arr_delay_ind, (with value, 1, 0, 'NA')
+alter table flights add arr_delay_ind TEXT
+
+update  flights set arr_delay_ind ='NA' where cancelled='1.0'
+
+update flights set arr_delay_ind ='1'
+where cancelled='0.0' and CAST(arr_delay as integer) >  0
+
+update flights set arr_delay_ind ='0'
+where cancelled='0.0' and CAST(arr_delay as integer)  <= 0
+
+
+# Create new column dep_dey_ind, (with value, 1, 0, 'NA')
+alter table flights add dep_delay_ind TEXT
+
+update flights set dep_delay_ind ='1'
+where cancelled='0.0' and CAST(dep_delay as integer) >  0
+
+update flights set dep_delay_ind ='0'
+where cancelled='0.0' and CAST(dep_delay as integer) <=  0
+
+update  flights set arr_delay_ind ='NA' where cancelled='1.0'
+update  flights set dep_delay_ind ='NA' where cancelled='1.0'
+
+
+# Create index idx_delay on flights (arr_delay_ind)
+create index idx_delay on flights(arr_delay_ind);
+
+# Create index idx_dep_delay on flights (depr_delay_ind)
+create index idx_dep_delay on flights(dep_delay_ind);
+
+select  arr_delay_ind, count(*) as cnt from flights group by 1;
+
+## select mkt_unique_carrier, origin, dest from flights limit 30;
+
+## Add new columns crs_arr_hh24dec and  crs_dep_hh24dec
+## Add new columns crs_arr_hh24 and  crs_dep_hh24
+
+alter table flights add  crs_arr_hh24dec REAL
+alter table flights add  crs_dep_hh24dec REAL
+alter table flights add  crs_arr_hh24 TEXT
+alter table flights add  crs_dep_hh24 TEXT
+
+update  flights  set crs_arr_hh24dec = substr(crs_arr_time,1, length(crs_arr_time)-2) + 
+round(CAST(substr(crs_arr_time, length(crs_arr_time)-1, 2) as REAL) /60,2) 
+
+update  flights  set crs_dep_hh24dec = substr(crs_dep_time,1, length(crs_dep_time)-2) + 
+round(CAST(substr(crs_dep_time, length(crs_dep_time)-1, 2) as REAL) /60,2) 
+
+update  flights  set crs_arr_hh24 = round(crs_arr_hh24dec,0)
+update  flights  set crs_dep_hh24 = round(crs_dep_hh24dec,0)
+
+create index idx_flt_car on flights (crs_arr_hh24)
+create index idx_flt_cde on flights (crs_dep_hh24)
+
+alter table flights add column haul_type interger
+
+update flights set haul_type =0 where cast(crs_elapsed_time as real) <= 180
+
+update flights set haul_type =1 
+where cast(crs_elapsed_time as real)  > 180 AND cast(crs_elapsed_time as real) <=600
+
+update flights set haul_type =2 where cast(crs_elapsed_time as real)  > 600
+
+create index idx_flg_hty on flights(haul_type)
+
+--------
+Staging
+
+select * from 
+
+select min(cast(crs_elapsed_time as real)) , max(cast(crs_elapsed_time as real)) from flights;
+
+select min(cast(crs_elapsed_time as real)) , max(cast(crs_elapsed_time as real)) from flights;
+min(cast(crs_elapsed_time as real))	max(cast(crs_elapsed_time as real))
+-143.0	1645.0
+
+select CAST(crs_arr_hh24 as integer) crs_arr_hh24,  count(*) hh_delay_cnt 
+from flights where arr_delay_ind='1' group by 1
+select CAST(crs_dep_hh24 as integer) crs_dep_hh24,  count(*) hh_delay_cnt from flights where arr_delay_ind='1' group by 1
+
+select min(distance) from flights
+select max(distance) from flights
+

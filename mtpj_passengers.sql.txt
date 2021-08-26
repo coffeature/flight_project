@@ -1,0 +1,21 @@
+# Due to table passengers contains data from 2015 to 2019
+# So, delete from year 2015, 2016 and 2017 data
+
+delete from passengers where year=2015;
+delete from passengers where year=2016;
+delete from passengers where year=2017;
+
+# find top 10 bussiest airport
+# theer is a table nas_delay_f (dest, tot_cnt, delay_cnt and delay_pct )
+SELECT dest, tot_cnt from nas_delay_f order by 2 desc limit 10;
+
+# Top 10 aiport passenger coverage , total_passengeer, top_10_cover percentage
+SELECT pass_top10_cover, pass_total,  
+       ROUND(100 * CAST(pass_top10_cover as REAL) / CAST(pass_total as REAL),2)  as top_tot_pct
+FROM (Select sum(passengers) as pass_top10_cover, 'A' as A
+      from passengers where dest in (SELECT dest from (SELECT dest, tot_cnt from nas_delay_f order by 2 desc limit 10))),
+      (Select sum(passengers) as pass_total, 'A' as B from passengers)
+WHERE A=B;
+
+
+
