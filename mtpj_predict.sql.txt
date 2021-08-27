@@ -1,0 +1,19 @@
+-- After done predictoin, to generate a out CSV file
+-- import outfile to CSV
+-- At DB mptj.db
+
+-- drop predict result table
+drop table if exists predict;
+
+.mode csv
+
+.import //Users/pelecheung/ds/w05/d5/mid-term-project-Flight-master/share/predict.csv predict 
+
+alter table predict rename "" to "row_num";
+
+-- SQL to extract file
+.header on
+
+SELECT  fl_date, mkt_carrier, mkt_carrier_fl_num, origin,dest, predicted as predicted_delay
+FROM flights_test_7days a , predict b
+WHERE a.row_num=b.row_num;

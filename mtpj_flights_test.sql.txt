@@ -1,0 +1,43 @@
+-- Added extract coulme in table flights_test, in order to joint with some factor tables before do prediction
+
+-- Handle scheduled arrival time, round to hour
+alter table flights_test add  crs_arr_hh24dec REAL;
+alter table flights_test add  crs_arr_hh24 TEXT;
+
+-- Scheduled arrival time:  hh24 and minute in ratio(i.e. mm/60)
+update  flights_test  set crs_arr_hh24dec = substr(crs_arr_time,1, length(crs_arr_time)-2) +
+round(CAST(substr(crs_arr_time, length(crs_arr_time)-1, 2) as REAL) /60,2);
+
+-- Scheduled arrival time round to hour
+update  flights_test  set crs_arr_hh24 = round(crs_arr_hh24dec,0);
+
+-- Due to round from 23:45 will round to 24
+-- On the other hand 00:15 will round to 00
+-- So, 24(hh) should be equal to 0(hh)
+update flights_test  set crs_arr_hh24 = '0.0' where crs_arr_hh24='24.0';
+
+-- Add new column haul_type. Value is based on grouping crs_elapsed_time 
+-- short <= 180; 180 < medium <=600 ; large > 600
+-- shore code =0, medium code=1, large code=2
+alter table flights_test add column haul_type interger;
+
+update flights_test set haul_type =0 where cast(crs_elapsed_time as real) <= 180;
+
+update flights_test set haul_type =1
+where cast(crs_elapsed_time as real)  > 180 AND cast(crs_elapsed_time as real) <=600;
+
+update flights_test set haul_type =2 where cast(crs_elapsed_time as real)  > 600;
+
+-- Add new colume for scheduled month
+alter table flights_test add fl_month text;
+
+update flights_test set fl_month =substr(fl_date, 6,2);
+
+drop table if exists flights_test_7days;
+
+create table flights_test_7days as select * from flights_test where fl_date BETWEEN '2020-01-01' AND '2020-01-07';
+
+
+
+
+

@@ -1,113 +1,117 @@
-## W05D05 - Mid-term project SQL Prouction
-## Delay caused by carrier, origin, dest
-## There are 5 new tables:
-## 1. carrier_delay_f 
-## 2. security_delay_f
-## 3. late_aircraft_f
-## 4. weather_delay_f
-## 5. nas_delay_f
-## 6. crs_arr_hr_f
-## 7. crs_dep_hr_f
-## i.e. table carrier_delay_f (carrier, total_flight_count, total_delay_count, delay_percentage)
+--  W05D05 - Mid-term project SQL 
+--  For statistical analysis, delay based on different factors
+--  There are 11 new tables:
+--  1. carrier_delay_f 
+--  2. security_delay_f
+--  3. late_aircraft_f
+--  4. weather_delay_f
+--  5. nas_delay_f
+--  6. crs_arr_hr_f
+--  7. crs_dep_hr_f
+--  8. haul_f
+--  9. hh24_f
+--  10. month_f
+--  11. airport_f
+--  i.e. table month_f {month (mm), total_flight_count, total_delay_count, delay_percentage}
 
-# Find out all current carries 
+--  Find out all current carries 
 create table current_carriers as 
 select distinct  mkt_unique_carrier from flights order by 1
 
-# Delay caused by carrier and percentage
+--  Delay caused by carrier and percentage
 CREATE table carrier_delay_f as 
 SELECT mkt_unique_carrier , tot_cnt , delay_cnt
 FROM (
 SELECT mkt_unique_carrier , tot_cnt 
 FROM current_carriers LEFT JOIN
 (select  mkt_unique_carrier a_mkt_unique_carrier,  count(*) as tot_cnt from flights 
- where (arr_delay_ind='Y' or arr_delay_ind='N')                    group by 1  )
+ where (arr_delay_ind='1' or arr_delay_ind='0')                    group by 1  )
 ON  mkt_unique_carrier = a_mkt_unique_carrier
 )   LEFT JOIN
 (select  mkt_unique_carrier d_mkt_unique_carrier , count(*) as delay_cnt from flights 
- where arr_delay_ind='Y'   and CAST(carrier_delay as integer)  >0  group by 1   )
+ where arr_delay_ind='1'   and CAST(carrier_delay as integer)  >0  group by 1   )
 ON  mkt_unique_carrier = d_mkt_unique_carrier
 
 alter table carrier_delay_f add delay_pct FLOAT
 update carrier_delay_f set delay_pct =  round(100 * CAST(delay_cnt AS REAL) / CAST(tot_cnt AS REAL ),5)
 
 ------------------------------------
-# Delay caused by Origin airpot
-# current origin 
+--  Delay caused by Origin airpot
+--  current origin 
 create table current_origin  as 
 select distinct origin  from flights order by 1
 
-#By origin # security_delay and percentage
+-- By origin --  security_delay and percentage
 CREATE table security_delay_f as 
 SELECT origin , tot_cnt ,  ifnull(delay_cnt,0 )  as delay_cnt
 FROM (
 SELECT origin  , tot_cnt 
 FROM current_origin LEFT JOIN
 (select origin  a_origin ,  count(*) as tot_cnt from flights 
- where (arr_delay_ind='Y' or arr_delay_ind='N')                    group by 1  )
+ where (arr_delay_ind='1' or arr_delay_ind='0')                    group by 1  )
 ON  origin  = a_origin 
 )   LEFT JOIN
 (select origin  d_origin  , count(*) as delay_cnt from flights 
- where arr_delay_ind='Y'   and CAST(security_delay as integer)  >0  group by 1   )
+ where arr_delay_ind='1'   and CAST(security_delay as integer)  >0  group by 1   )
 ON  origin  = d_origin 
 
 alter table security_delay_f add delay_pct FLOAT;
 update security_delay_f set delay_pct =  round(100 * CAST(delay_cnt AS REAL) / CAST(tot_cnt AS REAL ),5);
 
 
-#By origin # late_aircraft_delay and percentage
+-- By origin --  late_aircraft_delay and percentage
 CREATE table late_aircraft_f as 
 SELECT origin , tot_cnt ,  ifnull(delay_cnt,0 ) as delay_cnt
 FROM (
 SELECT origin  , tot_cnt 
 FROM current_origin LEFT JOIN
 (select origin  a_origin ,  count(*) as tot_cnt from flights 
- where (arr_delay_ind='Y' or arr_delay_ind='N')                    group by 1  )
+ where (arr_delay_ind='1' or arr_delay_ind='0')                    group by 1  )
 ON  origin  = a_origin 
 )   LEFT JOIN
 (select origin  d_origin  , count(*) as delay_cnt from flights 
- where arr_delay_ind='Y'   and CAST(late_aircraft_delay as integer)  >0  group by 1   )
+ where arr_delay_ind='1'   and CAST(late_aircraft_delay as integer)  >0  group by 1   )
 ON  origin  = d_origin 
 
 alter table late_aircraft_f add delay_pct FLOAT;
 update late_aircraft_f set delay_pct =  round(100 * CAST(delay_cnt AS REAL) / CAST(tot_cnt AS REAL ),5);
 
 
-# Delay caused by Dest airpot and percentage
-# current dest
+--  Delay caused by Dest airpot and percentage
+--  current dest
 create table current_dests as 
 select distinct dest as dest from flights order by 1
 
-#By dest  #By weather
+-- By dest  -- By weather
 CREATE table weather_delay_f as 
 SELECT dest , tot_cnt ,  ifnull(delay_cnt,0 ) as delay_cnt
 FROM (
 SELECT dest  , tot_cnt 
 FROM current_dests LEFT JOIN
 (select dest  a_dest ,  count(*) as tot_cnt from flights 
- where (arr_delay_ind='Y' or arr_delay_ind='N')                    group by 1  )
+ where (arr_delay_ind='1' or arr_delay_ind='0')                    group by 1  )
 ON  dest  = a_dest 
 )   LEFT JOIN
 (select dest  d_dest  , count(*) as delay_cnt from flights 
- where arr_delay_ind='Y'   and CAST(weather_delay as integer)  >0  group by 1   )
+ where arr_delay_ind='1'   and CAST(weather_delay as integer)  >0  group by 1   )
 ON  dest  = d_dest
 
 alter table weather_delay_f add delay_pct FLOAT;
 update weather_delay_f set delay_pct =  round(100 * CAST(delay_cnt AS REAL) / CAST(tot_cnt AS REAL ),5);
 
 
-#By dest  #By nas and percentage
+-- By dest  -- By nas and percentage
 CREATE table nas_delay_f as 
 SELECT dest , tot_cnt ,  ifnull(delay_cnt,0 ) as delay_cnt
 FROM (
 SELECT dest  , tot_cnt 
 FROM current_dests LEFT JOIN
 (select dest  a_dest ,  count(*) as tot_cnt from flights 
- where (arr_delay_ind='Y' or arr_delay_ind='N')                    group by 1  )
+ where (arr_delay_ind='1' or arr_delay_ind='0')                    group by 1  )
 ON  dest  = a_dest 
 )   LEFT JOIN
 (select dest  d_dest  , count(*) as delay_cnt from flights 
- where arr_delay_ind='Y'   and CAST(nas_delay as integer)  >0  group by 1   )
+ where arr_delay_ind='1'   and CAST(nas_delay as integer)  >0  group by 1   )
 ON  dest  = d_dest
 
 alter table nas_delay_f add delay_pct FLOAT;
@@ -124,7 +128,7 @@ FROM
   from flights where arr_delay_ind='1'                               group by 1) d
 where a.crs_arr_hh24 = d.crs_arr_hh24
 
-## Finding: departure will not caused any arrivel delay
+--  Finding: departure will not caused any arrivel delay
 CREATE TABLE crs_dep_hr_f as 
 SELECT a.crs_dep_hh24, tot_cnt , delay_cnt, round(100 * CAST(delay_cnt AS REAL) / CAST(tot_cnt AS REAL ),5) as delay_pct
 FROM 
@@ -134,7 +138,53 @@ FROM
   from flights where dep_delay_ind='1'                               group by 1) d
 where a.crs_dep_hh24 = d.crs_dep_hh24
 
+-- --  Haul Type
+create table haul_f as
+select a.haul_type, tot_cnt, delay_cnt, round(100 * CAST(delay_cnt AS REAL) / CAST(tot_cnt AS REAL ),5) as delay_pct 
+FROM 
+(select haul_type, count(*) as tot_cnt   from flights where cancelled ='0.0' group by 1) a,
+(select haul_type, count(*) as delay_cnt from flights where cancelled ='0.0' and arr_delay_ind='1' group by 1) b
+where a.haul_type = b.haul_type
 
-SELECT CAST(crs_dep_hh24 as integer) hh_24, count(*) haul_cnt
-FROM flights WHERE cancelled ='0.0' and haul_type= '2' group by 1; 
+-- --  By Hour
+create table hh24_f as
+select a.crs_arr_hh24, tot_cnt, delay_cnt, round(100 * CAST(delay_cnt AS REAL) / CAST(tot_cnt AS REAL ),5) as delay_pct 
+FROM 
+(select crs_arr_hh24, count(*) as tot_cnt   from flights where cancelled ='0.0' group by 1) a,
+(select crs_arr_hh24, count(*) as delay_cnt from flights where cancelled ='0.0' and arr_delay_ind='1' group by 1) b
+where a.crs_arr_hh24 = b.crs_arr_hh24
+
+-- --  By Month
+create table month_f as
+select a.fl_month, tot_cnt, delay_cnt, round(100 * CAST(delay_cnt AS REAL) / CAST(tot_cnt AS REAL ),5) as delay_pct 
+FROM 
+(select fl_month, count(*) as tot_cnt   from flights where cancelled ='0.0' group by 1) a,
+(select fl_month, count(*) as delay_cnt from flights where cancelled ='0.0' and arr_delay_ind='1' group by 1) b
+where a.fl_month = b.fl_month
+
+--  By Airport
+create table airport_f as
+select a.dest as airport, tot_cnt, delay_cnt, round(100 * CAST(delay_cnt AS REAL) / CAST(tot_cnt AS REAL ),5) as delay_pct 
+FROM 
+(select dest, count(*) as tot_cnt   from flights where cancelled ='0.0' group by 1) a,
+(select dest, count(*) as delay_cnt from flights where cancelled ='0.0' and arr_delay_ind='1' group by 1) b
+where a.dest = b.dest
+
+
+
+-- By airport
+CREATE table airport_f as 
+SELECT dest , tot_cnt ,  ifnull(delay_cnt,0 ) as delay_cnt
+FROM ( SELECT origin as dest  , tot_cnt 
+       FROM current_origin LEFT JOIN
+         (select dest  a_dest ,  count(*) as tot_cnt from flights 
+          where (arr_delay_ind='1' or arr_delay_ind='0')                    group by 1  )
+       ON  origin  = a_dest 
+      )   LEFT JOIN
+               (select dest  d_dest  , count(*) as delay_cnt from flights 
+                where arr_delay_ind='1'   and CAST(late_aircraft_delay as integer)  >0  group by 1   )
+          ON  dest  = d_dest 
+
+alter table airport_f add delay_pct FLOAT;
+update airport_f set delay_pct =  round(100 * CAST(delay_cnt AS REAL) / CAST(tot_cnt AS REAL ),5);
 

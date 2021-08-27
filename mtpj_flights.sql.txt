@@ -1,18 +1,20 @@
-## W05D05 - Mid-term project SQL Prouction
+-- W05D05 --Mid-term project SQL Prouction
 
-## connect to remote DB get all tables and save to local machine
+-- connect to remote DB get all tables and save to local machine
 
-create a new local DB mtpj.db
+-- In sqlite, create a new local DB mtpj.db
+.open mtpj.db
 
-# Import 3 csv files and create 3 new tables
+--Import 3 csv files and create 3 new tables
 import flights.csv and create a new table flights
 import fuel_consumption.csv and create a new table fuel_con
 import passengers.csv and create a new table passengers
 
-#Create index can_ind on flights (cancelled)
+-- - **** included all changes in table Flights **** -- -
+--Create index can_ind on flights (cancelled)
 create index can_ind on flights(cancelled);
 
-# Create new column arr_delay_ind, (with value, 1, 0, 'NA')
+--Create new column arr_delay_ind, (with value, 1, 0, 'NA')
 alter table flights add arr_delay_ind TEXT
 
 update  flights set arr_delay_ind ='NA' where cancelled='1.0'
@@ -23,8 +25,7 @@ where cancelled='0.0' and CAST(arr_delay as integer) >  0
 update flights set arr_delay_ind ='0'
 where cancelled='0.0' and CAST(arr_delay as integer)  <= 0
 
-
-# Create new column dep_dey_ind, (with value, 1, 0, 'NA')
+--Create new column dep_dey_ind, (with value, 1, 0, 'NA')
 alter table flights add dep_delay_ind TEXT
 
 update flights set dep_delay_ind ='1'
@@ -37,18 +38,18 @@ update  flights set arr_delay_ind ='NA' where cancelled='1.0'
 update  flights set dep_delay_ind ='NA' where cancelled='1.0'
 
 
-# Create index idx_delay on flights (arr_delay_ind)
+--Create index idx_delay on flights (arr_delay_ind)
 create index idx_delay on flights(arr_delay_ind);
 
-# Create index idx_dep_delay on flights (depr_delay_ind)
+--Create index idx_dep_delay on flights (depr_delay_ind)
 create index idx_dep_delay on flights(dep_delay_ind);
 
 select  arr_delay_ind, count(*) as cnt from flights group by 1;
 
-## select mkt_unique_carrier, origin, dest from flights limit 30;
+-- select mkt_unique_carrier, origin, dest from flights limit 30;
 
-## Add new columns crs_arr_hh24dec and  crs_dep_hh24dec
-## Add new columns crs_arr_hh24 and  crs_dep_hh24
+-- Add new columns crs_arr_hh24dec and  crs_dep_hh24dec
+-- Add new columns crs_arr_hh24 and  crs_dep_hh24
 
 alter table flights add  crs_arr_hh24dec REAL
 alter table flights add  crs_dep_hh24dec REAL
@@ -64,6 +65,11 @@ round(CAST(substr(crs_dep_time, length(crs_dep_time)-1, 2) as REAL) /60,2)
 update  flights  set crs_arr_hh24 = round(crs_arr_hh24dec,0)
 update  flights  set crs_dep_hh24 = round(crs_dep_hh24dec,0)
 
+-- Due to round from 23:45 will round to 24
+-- However 24(hh) should be equal to 0(hh)
+update flights  set crs_arr_hh24 = '0.0' where crs_arr_hh24='24.0';
+update flights  set crs_dep_hh24 = '0.0' where crs_dep_hh24='24.0';
+
 create index idx_flt_car on flights (crs_arr_hh24)
 create index idx_flt_cde on flights (crs_dep_hh24)
 
@@ -78,21 +84,24 @@ update flights set haul_type =2 where cast(crs_elapsed_time as real)  > 600
 
 create index idx_flg_hty on flights(haul_type)
 
---------
-Staging
+alter table flights add fl_month text 
 
-select * from 
+update flights set fl_month =substr(fl_date, 6,2)
 
-select min(cast(crs_elapsed_time as real)) , max(cast(crs_elapsed_time as real)) from flights;
+alter table flights add arr_delay_min_gy text;
 
-select min(cast(crs_elapsed_time as real)) , max(cast(crs_elapsed_time as real)) from flights;
-min(cast(crs_elapsed_time as real))	max(cast(crs_elapsed_time as real))
--143.0	1645.0
+alter table flights add arr_delay_min_bin text;
 
-select CAST(crs_arr_hh24 as integer) crs_arr_hh24,  count(*) hh_delay_cnt 
-from flights where arr_delay_ind='1' group by 1
-select CAST(crs_dep_hh24 as integer) crs_dep_hh24,  count(*) hh_delay_cnt from flights where arr_delay_ind='1' group by 1
+create index idx_flg_arr_bin on flights(arr_delay_min_gy)
 
-select min(distance) from flights
-select max(distance) from flights
+-- vlaue in column arr_delay_min_bin is similar to arr_delay_min_gy 
+update flights set arr_delay_min_bin = arr_delay_min_gy;
+update flights set arr_delay_min_bin = -15 where arr_delay_min_bin ='0' ;
+
+-- Index for binning
+create index idx_flg_arr_bin2 on flights(arr_delay_min_bin);
+
+-- index for fl_month
+create index idx_flg_mth on flights(fl_month);
+
 

@@ -1,0 +1,15 @@
+-- For traning purose, due to table Flights has more than 16 million of rows, 
+-- So create a slim table flights_slim for testing and training
+-- So only pick 160K at sample
+
+DROP TABLE  IF EXISTS flights_slim;
+
+CREATE TABLE flights_slim as select * from flights 
+WHERE cancelled = '0.0' AND arr_delay_min_bin is not null 
+-- AND CAST(arr_delay_min_bin as integer) BETWEEN  -75 AND 165   -- arr_delay -1.5 hrs to 3 hrs
+-- AND CAST(arr_delay_min_bin as integer) BETWEEN  -45 AND 105   -- arr_delay -1 hrs to 2 hrs  cover 97.36% of delay
+AND CAST(arr_delay_min_bin as integer) BETWEEN  -45 AND 75   -- arr_delay -1 hrs to 2 hrs   cover 96%    of delay
+-- AND CAST(arr_delay_min_bin as integer) BETWEEN  -15 AND 45   -- arr_delay -0.5 hrs to 1 hrs cover 90.8   of delay
+ORDER BY RANDOM() LIMIT 1600000;
+
+
